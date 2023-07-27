@@ -1,9 +1,13 @@
 <?php
 
 namespace App\Libraries;
+/**
+ * QueryBuilder is a SQL query builder class that provides a fluent interface for constructing SQL queries.
+ */
+class QueryBuilder
+{
 
-class QueryBuilder {
-
+    // Protected members holding parts of SQL query
     protected $db;
     protected $table;
     protected $selectColumns = [];
@@ -18,39 +22,93 @@ class QueryBuilder {
     protected $limit;
     protected $offset;
 
-    public function __construct($db) {
+    /**
+     * QueryBuilder constructor.
+     * @param $db Database connection
+     */
+    public function __construct($db)
+    {
         $this->db = $db;
     }
 
-    public function setTable($table) {
+    /**
+     * Set table for the SQL operation
+     * @param $table Table name
+     * @return $this
+     */
+    public function setTable($table)
+    {
         $this->table = $table;
         return $this;
     }
 
-    public function getTable() {
+    /**
+     * Get table name
+     * @return mixed Table name
+     */
+    public function getTable()
+    {
         return $this->table;
     }
 
-    public function select($columns = '*') {
+    /**
+     * Select columns
+     * @param string $columns Columns to select
+     * @return $this
+     */
+    public function select($columns = '*')
+    {
         $this->selectColumns = explode(', ', $columns);
         return $this;
     }
 
-    public function join($table, $condition, $type = 'INNER') {
+    /**
+     * Add a join clause
+     * @param $table Table name
+     * @param $condition Join condition
+     * @param string $type Join type
+     * @return $this
+     */
+    public function join($table, $condition, $type = 'INNER')
+    {
         $this->joins[] = "$type JOIN $table ON $condition";
         return $this;
     }
-    public function leftJoin($table, $condition) {
+
+    /**
+     * Add a left join clause
+     * @param $table Table name
+     * @param $condition Join condition
+     * @return $this
+     */
+    public function leftJoin($table, $condition)
+    {
         $this->joins[] = "LEFT JOIN $table ON $condition";
         return $this;
     }
 
-    public function rightJoin($table, $condition) {
+    /**
+     * Add a right join clause
+     * @param $table Table name
+     * @param $condition Join condition
+     * @return $this
+     */
+    public function rightJoin($table, $condition)
+    {
         $this->joins[] = "RIGHT JOIN $table ON $condition";
         return $this;
     }
 
-    public function where($column, $value, $operator = '=', $logicalOperator = 'AND') {
+    /**
+     * Add a where clause
+     * @param $column Column name
+     * @param $value Column value
+     * @param string $operator Comparison operator
+     * @param string $logicalOperator Logical operator
+     * @return $this
+     */
+    public function where($column, $value, $operator = '=', $logicalOperator = 'AND')
+    {
         $this->whereClauses[] = [
             'clause' => "$column $operator ?",
             'param' => $value,
@@ -62,7 +120,15 @@ class QueryBuilder {
         return $this;
     }
 
-    public function whereIn($column, array $values, $logicalOperator = 'AND') {
+    /**
+     * Add a where clause with IN operator
+     * @param $column Column name
+     * @param array $values Column values
+     * @param string $logicalOperator Logical operator
+     * @return $this
+     */
+    public function whereIn($column, array $values, $logicalOperator = 'AND')
+    {
         $placeholders = implode(', ', array_fill(0, count($values), '?'));
         $this->whereClauses[] = [
             'clause' => "$column IN ($placeholders)",
@@ -70,15 +136,21 @@ class QueryBuilder {
             'logicalOperator' => $logicalOperator
         ];
 
-        // Aggiungi i parametri all'array dei parametri
         foreach ($values as $value) {
             $this->parameters[] = $value;
         }
         return $this;
     }
 
-    // Metodo per iniziare un gruppo di clausole con parentesi
-    public function beginWhereGroup($logicalOperator = 'AND') {
+    /**
+     * Start a group of where clauses with AND operator
+     * @param $column Column name
+     * @param array $values Column values
+     * @param string $logicalOperator Logical operator
+     * @return $this
+     */
+    public function beginWhereGroup($logicalOperator = 'AND')
+    {
         $this->whereClauses[] = [
             'clause' => '(',
             'logicalOperator' => $logicalOperator
@@ -86,8 +158,12 @@ class QueryBuilder {
         return $this;
     }
 
-    // Metodo per terminare un gruppo di clausole con parentesi
-    public function endWhereGroup() {
+    /**
+     * End a group of where clauses
+     * @return $this
+     */
+    public function endWhereGroup()
+    {
         $this->whereClauses[] = [
             'clause' => ')',
             'logicalOperator' => null
@@ -95,72 +171,91 @@ class QueryBuilder {
         return $this;
     }
 
-    public function groupBy($column) {
+    /**
+     * Add a group by clause
+     * @param $column Column name
+     * @return $this
+     */
+    public function groupBy($column)
+    {
         $this->groupBy[] = $column;
         return $this;
     }
 
-    public function having($column, $value, $operator = '=') {
+    /**
+     * Add a having clause
+     * @param $column Column name
+     * @param $value Column value
+     * @param string $operator Comparison operator
+     * @return $this
+     */
+    public function having($column, $value, $operator = '=')
+    {
         $this->havingClauses[] = "$column $operator ?";
         $this->parameters[] = $value;
         return $this;
     }
 
-    protected function buildGroupBy() {
+    /**
+     * Build parts of SQL query
+     * @return string
+     */
+    protected function buildGroupBy()
+    {
         if (empty($this->groupBy)) {
             return '';
         }
         return ' GROUP BY ' . implode(', ', $this->groupBy);
     }
 
-    protected function buildHaving() {
+    /**
+     * Build parts of SQL query
+     * @return string
+     */
+    protected function buildHaving()
+    {
         if (empty($this->havingClauses)) {
             return '';
         }
         return ' HAVING ' . implode(' AND ', $this->havingClauses);
     }
 
-    public function orderBy($column, $direction = 'ASC') {
+    /**
+     * Add an order by clause
+     * @param $column Column name
+     * @param string $direction Order direction
+     * @return $this
+     */
+    public function orderBy($column, $direction = 'ASC')
+    {
         $this->orders[] = "$column $direction";
         return $this;
     }
 
-    protected function buildSelect() {
+    /**
+     * Build parts of SQL query
+     * @return string
+     */
+    protected function buildSelect()
+    {
         return 'SELECT ' . implode(', ', $this->selectColumns);
     }
 
-    protected function buildJoins() {
+    /**
+     * Build parts of SQL query
+     * @return string
+     */
+    protected function buildJoins()
+    {
         return implode(' ', $this->joins);
     }
 
-    /*
-    protected function buildWhere() {
-        if (empty($this->whereClauses)) {
-            return '';
-        }
-
-        $whereSql = '';
-        $firstClause = true;
-
-
-        foreach ($this->whereClauses as $whereClause) {
-            if (!$firstClause) {
-                $whereSql .= " " . $whereClause['logicalOperator'];
-            } else {
-                $firstClause = false;
-            }
-            $whereSql .= " " . $whereClause['clause'];
-            if (!empty($whereClause['params'])) {
-                foreach ($whereClause['params'] as $param) {
-                    $this->parameters[] = $param;
-                }
-            }
-            $first = false;
-        }
-        return ' WHERE ' . $whereSql;
-    }*/
-
-    public function buildWhere() {
+    /**
+     * Build parts of SQL query
+     * @return string
+     */
+    public function buildWhere()
+    {
         $whereString = '';
         if (!empty($this->whereClauses)) {
             $whereString .= ' WHERE ';
@@ -180,7 +275,12 @@ class QueryBuilder {
         return $whereString;
     }
 
-    public function executeQuery() {
+    /**
+     * Execute the query
+     * @return \PDOStatement
+     */
+    public function executeQuery()
+    {
         $sql = $this->toSql();
         $this->logQuery($sql);
         try {
@@ -194,24 +294,45 @@ class QueryBuilder {
         }
     }
 
-    protected function buildOrderBy() {
+    /**
+     * Build parts of SQL query
+     * @return string
+     */
+    protected function buildOrderBy(): string
+    {
         if (empty($this->orders)) {
             return '';
         }
         return ' ORDER BY ' . implode(', ', $this->orders);
     }
 
-    public function limit($limit) {
+    /**
+     * Limit the number of results
+     * @return QueryBuilder
+     */
+    public function limit($limit): QueryBuilder
+    {
         $this->limit = (int)$limit;
         return $this;
     }
 
-    public function offset($offset) {
+    /**
+     * Offset the results
+     * @param int $offset
+     * @return QueryBuilder
+     */
+    public function offset($offset): QueryBuilder
+    {
         $this->offset = (int)$offset;
         return $this;
     }
 
-    protected function buildLimit() {
+    /**
+     * Build parts of SQL query
+     * @return string
+     */
+    protected function buildLimit(): string
+    {
         if (is_null($this->limit)) {
             return '';
         }
@@ -222,7 +343,13 @@ class QueryBuilder {
         return $sql;
     }
 
-    public function insert($values) {
+    /**
+     * Insert a row
+     * @param array $values  to insert
+     * @return \PDOStatement
+     */
+    public function insert(array $values): array|\PDOStatement
+    {
         $columns = implode(", ", array_keys($values));
         $placeholders = implode(", ", array_fill(0, count($values), "?"));
         $sql = "INSERT INTO $this->table ($columns) VALUES ($placeholders)";
@@ -230,18 +357,14 @@ class QueryBuilder {
         return $this->execute($sql);
     }
 
-    /*public function update($values) {
-        $setClauses = [];
-        foreach ($values as $column => $value) {
-            $setClauses[] = "$column = ?";
-            $this->parameters[] = $value;
-        }
-        $setClause = implode(", ", $setClauses);
-        $sql = "UPDATE $this->table SET $setClause" . $this->buildWhere();
-        return $this->execute($sql);
-    }*/
-
-    public function update($values, $conditions = []) {
+    /**
+     * Update rows
+     * @param $values Values to update
+     * @param array $conditions Conditions
+     * @return \PDOStatement
+     */
+    public function update($values, $conditions = []): array|\PDOStatement
+    {
         $setClauses = [];
         foreach ($values as $column => $value) {
             $setClauses[] = "$column = ?";
@@ -249,7 +372,6 @@ class QueryBuilder {
         }
         $setClause = implode(", ", $setClauses);
 
-        // Generate WHERE clauses if provided
         if (!empty($conditions)) {
             foreach ($conditions as $column => $value) {
                 $this->where($column, $value);
@@ -258,7 +380,6 @@ class QueryBuilder {
 
         $sql = "UPDATE $this->table SET $setClause" . $this->buildWhere();
 
-        // Aggiungi i parametri per la clausola WHERE
         foreach ($this->whereClauses as $whereClause) {
             if (isset($whereClause['param'])) {
                 $this->parameters[] = $whereClause['param'];
@@ -274,39 +395,70 @@ class QueryBuilder {
     }
 
 
-
-    public function delete() {
+    /**
+     * Delete rows
+     * @return \PDOStatement
+     */
+    public function delete(): array|\PDOStatement
+    {
         $sql = "DELETE FROM $this->table" . $this->buildWhere();
         return $this->execute($sql);
     }
 
-    public function beginTransaction() {
+    /**
+     * Begin a transaction
+     * @return bool
+     */
+    public function beginTransaction(): bool
+    {
         return $this->db->beginTransaction();
     }
 
-    public function commit() {
+    /**
+     * Commit a transaction
+     * @return bool
+     */
+    public function commit(): bool
+    {
         return $this->db->commit();
     }
 
-    public function rollback() {
+    /**
+     * Rollback a transaction
+     * @return bool
+     */
+    public function rollback(): bool
+    {
         return $this->db->rollback();
     }
 
-    public function logQuery($sql) {
-        // Qui dovrai implementare il logging in base alle tue esigenze
-        // Ad esempio, potresti scrivere il log su file o su database
-        // Oppure potresti usare Monolog
+    /**
+     * Log a query
+     * @param $sql SQL query
+     */
+    public function logQuery(SQL $sql)
+    {
+
     }
 
 
-
-    public function count() {
+    /**
+     * Count the number of rows
+     * @return mixed
+     */
+    public function count(): mixed
+    {
         $sql = "SELECT COUNT(*) FROM $this->table" . $this->buildWhere();
         $stmt = $this->execute($sql);
         return $stmt->fetchColumn();
     }
 
-    public function toSql() {
+    /**
+     * Get the SQL query string
+     * @return string
+     */
+    public function toSql(): string
+    {
         $sql = $this->buildSelect();
         $sql .= " FROM $this->table ";
         $sql .= $this->buildJoins();
@@ -318,7 +470,12 @@ class QueryBuilder {
         return $sql;
     }
 
-    public function reset() {
+    /**
+     * Reset the query builder
+     * @return $this
+     */
+    public function reset(): static
+    {
         $this->selectColumns = [];
         $this->joins = [];
         $this->whereClauses = [];
@@ -332,11 +489,21 @@ class QueryBuilder {
         $this->offset = null;
         return $this;
     }
-    public function getParameters() {
+
+    /**
+     * Get the parameters
+     * @return array
+     */
+    public function getParameters(): array
+    {
         return $this->parameters;
     }
 
-    public function get()
+    /**
+     * Execute the query and return the result
+     * @return array
+     */
+    public function get(): array
     {
         $sql = $this->toSql();
         $stmt = $this->db->prepare($sql);
@@ -345,7 +512,12 @@ class QueryBuilder {
         return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
 
-    public function execute($sql) {
+    /**
+     * Execute arbitrary SQL
+     * @return \PDOStatement|false
+     */
+    public function execute($sql): bool|\PDOStatement
+    {
         $stmt = $this->db->prepare($sql);
 
         for ($i = 0; $i < count($this->parameters); $i++) {
@@ -358,17 +530,11 @@ class QueryBuilder {
         return $stmt;
     }
 
-    public function or()
-    {
-        $this->beginWhereGroup('OR');
-    }
-
-    public function and()
-    {
-        $this->beginWhereGroup('AND');
-    }
-
-    public function getColumns()
+    /**
+     * Get the columns of a table
+     * @return array
+     */
+    public function getColumns(): array
     {
         $sql = "SHOW COLUMNS FROM $this->table";
         $stmt = $this->db->prepare($sql);
@@ -379,6 +545,15 @@ class QueryBuilder {
             $columns[] = $column['Field'];
         }
         return $columns;
+    }
+
+    /**
+     * Get the last inserted ID
+     * @return string
+     */
+    public function getLastInsertedId(): string
+    {
+        return $this->db->lastInsertId();
     }
 
 }
