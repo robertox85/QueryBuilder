@@ -38,10 +38,10 @@ $result = $qb->setTable('users')
 // SELECT * FROM users WHERE (name = 'John' OR name = 'Jane') AND age > 21
 $result = $qb->setTable('users')
              ->beginWhereGroup()
-                 ->where('name', 'John')
-                 ->orWhere('name', 'Jane')
+                 ->where('name', 'John', '=', 'OR')
+                 ->where('name', 'Jane', '=', 'OR')
              ->endWhereGroup()
-             ->where('age', '>', 21)
+             ->where('age', 21, '>')
              ->get();
 
 ```
